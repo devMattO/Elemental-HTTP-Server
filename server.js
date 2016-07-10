@@ -34,7 +34,6 @@ const getMethod = ( req, res ) => {
 const postMethod = ( req, res ) => {
   req.on('data', (data)=>{
     let reqBody = querystring.parse(data.toString());
-    console.log(reqBody);
     fs.writeFile('public' + req.url, htmlTemplate(reqBody));
     updateIndexHtml(req, res, reqBody );
     res.end();
@@ -42,19 +41,21 @@ const postMethod = ( req, res ) => {
 };
 
 const updateIndexHtml = ( req, res, obj ) =>{
-  // req.on('data', (data)=>{
     fs.readFile('public/index.html', (err, data)=>{
       let indexHtmlString = data.toString();
-      // let replacePosition = indexHtmlString.indexOf('</ol>');
       indexHtmlString = indexHtmlString.replace('</ol>',
-  `<li>
-    <a href="${req.url}">${obj.elementName}</a>
-  </li>
-</ol>`);
-      console.log(indexHtmlString);
+      `  <li>
+        <a href="${req.url}">${obj.elementName}</a>
+    </li>
+  </ol>`);
+      let findTheNum = indexHtmlString.indexOf(`</h3>`);
+      let numOfElements = parseFloat(indexHtmlString.charAt(findTheNum-1));
+      let incrementNumElements = ++numOfElements;
+      let htmlArray = indexHtmlString.split('\n');
+      htmlArray.splice(10,1,`  <h3>There are ${incrementNumElements}</h3>`);
+      indexHtmlString = htmlArray.join(`\n`);
       fs.writeFile('public/index.html', indexHtmlString, 'utf8');
     });
-  // });
 };
 
 
@@ -64,16 +65,16 @@ const htmlTemplate = ( reqBody ) => (
   <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>The Elements - Hydrogen</title>
+    <title>The Elements - ${reqBody.elementName}</title>
     <link rel="stylesheet" href="/css/styles.css">
   </head>
-  <body>
-    <h1>${reqBody.elementName}</h1>
-    <h2>${reqBody.elementSymbol}</h2>
-    <h3>Atomic number ${reqBody.elementAtomicNumber}</h3>
-    <p>${reqBody.elementDescription}</p>
-    <p><a href="/">back</a></p>
-  </body>
+    <body>
+      <h1>${reqBody.elementName}</h1>
+      <h2>${reqBody.elementSymbol}</h2>
+      <h3>Atomic number ${reqBody.elementAtomicNumber}</h3>
+      <p>${reqBody.elementDescription}</p>
+      <p><a href="/">back</a></p>
+    </body>
   </html>`
 
 );
