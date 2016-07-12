@@ -1,101 +1,96 @@
-const HTTP = require('http');
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
-const querystring = require('querystring');
-const favicon = require('serve-favicon');
-const _favicon = favicon(__dirname + '/public/favicon.ico');
+const HTTP = require( 'http' );
+const fs = require( 'fs' );
+const path = require( 'path' );
+const url = require( 'url' );
+const querystring = require( 'querystring' );
+const favicon = require( 'serve-favicon' );
+const _favicon = favicon( __dirname + '/public/favicon.ico' );
 
-const server = HTTP.createServer((req,res)=>{
-  console.log(req.method);
-  if(req.method === 'GET'){
+const server = HTTP.createServer( ( req, res ) => {
+  console.log( req.method );
+  if( req.method === 'GET' ) {
     getMethod( req, res );
-  }else if(req.method === 'POST'){
+  } else if( req.method === 'POST' ) {
     updateIndexHtml(req, res );
     postMethod( req, res );
-  }else if(req.method === 'PUT'){
+  } else if( req.method === 'PUT' ) {
     putMethod( req, res );
-  }else if(req.method === 'DELETE'){
+  } else if( req.method === 'DELETE' ) {
     deleteElementFromIndex( req, res );
     deleteMethod( req, res );
   }
 });
 
-server.listen('8080', () => {
-  console.log('Listening on port 8080');
-});
-
 const getMethod = ( req, res ) => {
-  fs.readFile(req.url, (err, data)=>{
-    if(err === null){
-      res.write(fs.readFileSync('public/404.html'));
+  fs.readFile(req.url, ( err, data ) => {
+    if( err === null ) {
+      res.write( fs.readFileSync( 'public/404.html' ) );
       res.end();
-    }else{
-      if(req.url === '/' || undefined){
+    } else {
+      if( req.url === '/' || undefined ) {
         req.url = '/index.html';
       }
-      res.write(fs.readFileSync('public' + req.url));
+      res.write( fs.readFileSync(`public${req.url}`) );
       res.end();
     }
   });
 };
 
 const postMethod = ( req, res ) => {
-  req.on('data', (data)=>{
-    let reqBody = querystring.parse(data.toString());
-    res.writeHead(200, {
+  req.on( 'data', ( data ) => {
+    let reqBody = querystring.parse( data.toString() );
+    res.writeHead( 200, {
      'Content-type' : 'application/json',
      'success' : true});
-    fs.writeFile('public' + req.url, htmlTemplate(reqBody));
+    fs.writeFile(`public${req.url}`, htmlTemplate( reqBody ));
     res.end();
   });
 };
 
 const putMethod = ( req, res ) => {
-  fs.readFile('public' + req.url, (err,data)=>{
-    if(err !== null){
-      res.writeHead(500, {
+  fs.readFile( `public${req.url}`, ( err, data ) => {
+    if( err !== null ) {
+      res.writeHead( 500, {
        'Content-type':'application/json',
        'error':`resource ${req.url} does not exist`,
       });
       res.end();
     } else {
-      postMethod(req,res);
+      postMethod( req, res );
     }
   });
 };
 
 const deleteMethod = ( req, res ) => {
-  fs.readFile('public' + req.url, ( err, data ) =>{
-    if(err !== null){
-      res.writeHead(500, {
+  fs.readFile( `public${req.url}`, ( err, data ) =>{
+    if( err !== null ){
+      res.writeHead( 500, {
        'Content-type':'application/json',
        'error':`resource ${req.url} does not exist`,
       });
       res.end();
-    }else{
-      console.log(`public${req.url}`, '<----------');
+    } else {
       fs.unlink(`public${req.url}`);
       res.end();
     }
   });
 };
 
-const updateIndexHtml = ( req, res ) =>{
-  req.on('data', (data) => {
-    const reqBody = querystring.parse(data.toString());
-    fs.readFile('public/index.html', (err, data)=>{
+const updateIndexHtml = ( req, res ) => {
+  req.on( 'data', (data) => {
+    const reqBody = querystring.parse( data.toString() );
+    fs.readFile( 'public/index.html', ( err, data ) => {
       let indexHtmlString = data.toString();
       indexHtmlString = indexHtmlString.replace('</ol>',
   `  <li><a href="${req.url}">${reqBody.elementName}</a></li>
   </ol>`);
       let findTheNum = indexHtmlString.indexOf(`</h3>`);
-      let numOfElements = parseFloat(indexHtmlString.charAt(findTheNum-1));
+      let numOfElements = parseFloat( indexHtmlString.charAt(findTheNum-1) );
       let incrementNumElements = ++numOfElements;
       let htmlArray = indexHtmlString.split('\n');
-      htmlArray.splice(10,1,`<h3>These are ${incrementNumElements}</h3>`);
-      indexHtmlString = htmlArray.join(`\n`);
-      fs.writeFile('public/index.html', indexHtmlString, 'utf8');
+      htmlArray.splice( 10, 1, `<h3>These are ${incrementNumElements}</h3>` );
+      indexHtmlString = htmlArray.join( `\n` );
+      fs.writeFile( 'public/index.html', indexHtmlString, 'utf8' );
     });
   });
 };
@@ -103,18 +98,18 @@ const updateIndexHtml = ( req, res ) =>{
 const deleteElementFromIndex = ( req, res ) => {
   req.on('data', (data) => {
     const reqBody = querystring.parse(data.toString());
-    fs.readFile('public/index.html', (err, data)=>{
+    fs.readFile('public/index.html', ( err, data ) => {
       let indexHtmlString = data.toString();
       indexHtmlString = indexHtmlString.replace(
 `  <li><a href="${req.url}">${reqBody.elementName}</a></li>`, ''); // weird spaces showing up in place of <li> tag, how get rid brah????
 
       let findTheNum = indexHtmlString.indexOf(`</h3>`);
-      let numOfElements = parseFloat(indexHtmlString.charAt(findTheNum-1));
+      let numOfElements = parseFloat( indexHtmlString.charAt(findTheNum-1) );
       let decrementNumElements = --numOfElements;
       let htmlArray = indexHtmlString.split('\n');
-      htmlArray.splice(10,1,`  <h3>There are ${decrementNumElements}</h3>`);
+      htmlArray.splice( 10, 1, `  <h3>There are ${decrementNumElements}</h3>` );
       indexHtmlString = htmlArray.join(`\n`);
-      fs.writeFile('public/index.html', indexHtmlString, 'utf8');
+      fs.writeFile( 'public/index.html', indexHtmlString, 'utf8' );
     });
   });
 };
@@ -138,3 +133,7 @@ const htmlTemplate = ( reqBody ) => (
 </html>`
 
 );
+
+server.listen('8080', () => {
+  console.log('Listening on port 8080');
+});
